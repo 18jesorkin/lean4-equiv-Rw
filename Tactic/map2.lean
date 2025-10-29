@@ -45,7 +45,20 @@ def unexpandMap : Lean.PrettyPrinter.Unexpander
   -- (map₂'_eq) app'_mk {α} {β} : (x : Exp (α ⇒' β)) → (y : Exp α) → ⟦x.app y⟧ = app' ⟦x⟧ ⟦y⟧
   -- := fun x y => (Quotient.map₂_mk (@Exp.app α β) (@app_resp α β) x y).symm
 
-def add_map₂ (map₂ : Name) (map₂_resp : Name) : TacticM Unit := do
+inductive LiftType
+  | map
+  | map₂
+  | lift
+  | lift₂
+
+def LiftType.toName : LiftType → Lean.Name
+  | map => ``Quotient.map_mk
+  | map₂ => ``Quotient.map₂_mk
+  | lift => ``Quotient.lift_mk
+  | lift₂ => ``Quotient.lift₂_mk
+
+
+def add_whatever (ty : LiftType) (map₂ : Name) (map₂_resp : Name) : TacticM Unit := do
   --Step1: Count number of parameters for map₂, m
   let map₂_Expr := (Expr.const map₂ [])
   let map₂_Type := ← inferType map₂_Expr
@@ -55,7 +68,7 @@ def add_map₂ (map₂ : Name) (map₂_resp : Name) : TacticM Unit := do
   --Step2: Add constant map₂' to environment
   --   (map₂' := fun {x₁ : T₁} {x₂ : T₂} ⋯ {xₘ : Tₘ} => Quotient.map₂ (@map₂ x₁ ... xₘ) (@map₂_resp x₁ ... xₘ))
   let value : Expr := ← forallBoundedTelescope map₂_Type (some $ m) fun xs _ => do
-      let QuotientApp := ← mkAppM ``Quotient.map₂_mk #[(mkAppN map₂_Expr xs), (mkAppN map₂_resp_Expr xs)]
+      let QuotientApp := ← mkAppM ty.toName #[(mkAppN map₂_Expr xs), (mkAppN map₂_resp_Expr xs)]
       mkLambdaFVars xs QuotientApp
   let type := ← inferType value
 
@@ -73,7 +86,8 @@ def add_map₂ (map₂ : Name) (map₂_resp : Name) : TacticM Unit := do
 
   --evalTactic (← `(tactic | let hi := 3))
 
-elab "add_map₂" map₂:ident map₂_resp:ident : tactic => do add_map₂ @map₂.getId @map₂_resp.getId
+elab "add" "map₂" map₂:ident map₂_resp:ident : tactic => do add_lift (LiftType.map₂) @map₂.getId @map₂_resp.getId
+elab "add" "lift" map₂:ident map₂_resp:ident : tactic => do add_map₂ @map₂.getId @map₂_resp.getId
 
 def R : Nat → Nat → Prop := fun n1 n2 => n1 = n2
 
