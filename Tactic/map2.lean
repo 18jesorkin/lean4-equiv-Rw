@@ -3,6 +3,30 @@ import Mathlib
 
 open Lean Elab Tactic Term Meta
 
+@[app_unexpander Quotient.lift]
+def unexpandLift : Lean.PrettyPrinter.Unexpander
+  | `($_ $t:term ⋯) => `(⟦$t⟧)
+  | `($_ $t:term $_:term) => `(⟦$t⟧)
+  | _ => throw ()
+
+@[app_unexpander Quotient.lift₂]
+def unexpandLift₂ : Lean.PrettyPrinter.Unexpander
+  | `($_ $t:term ⋯) => `(⟦$t⟧)
+  | `($_ $t:term $_:term) => `(⟦$t⟧)
+  | _ => throw ()
+
+@[app_unexpander Quotient.map₂]
+def unexpandMap₂ : Lean.PrettyPrinter.Unexpander
+  | `($_ $t:term ⋯) => `(⟦$t⟧)
+  | `($_ $t:term $_:term) => `(⟦$t⟧)
+  | _ => throw ()
+
+@[app_unexpander Quotient.map]
+def unexpandMap : Lean.PrettyPrinter.Unexpander
+  | `($_ $t:term ⋯) => `(⟦$t⟧)
+  | `($_ $t:term $_:term) => `(⟦$t⟧)
+  | _ => throw ()
+
 -- R         : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop
 -- R_Setoid  : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → Setoid X
 -- map₂      : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₘ : Tₘ) → (_ : X) → (_ : X) → X
@@ -68,6 +92,7 @@ lemma test : True :=
   add_map₂ Nat.add add_resp
   --let Nat.add' := Quotient.map₂ Nat.add add_resp
   have : test.Nat.add' = test.Nat.add' := rfl
+  #print test.Nat.add'
   --have : Nat.add' = Nat.add' := rfl
   exact trivial
 

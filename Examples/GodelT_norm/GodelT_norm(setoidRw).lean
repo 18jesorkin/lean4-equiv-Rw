@@ -135,7 +135,6 @@ by
   intro h1
 
   replace_R R R_Setoid
-
   let Exp_inter'    := fun a => Quotient.lift (@Exp_inter a) (@R_lemma1 a)
   let Exp_inter'_mk := fun a => Quotient.lift_mk (@Exp_inter a) (@R_lemma1 a)
   have eq_aux :  (a : Ty) → Quotient.lift (@Exp_inter a) (@R_lemma1 a) = @Exp_inter' a := fun a => rfl ; simp only [eq_aux] at Exp_inter'_mk ; clear eq_aux
