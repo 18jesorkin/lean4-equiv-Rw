@@ -1,5 +1,4 @@
 import Tactic.replace_R
-
 import Tactic.map2
 
 def R : Nat → Nat → Prop := fun n₁ n₂ => ∃ m, n₁ % m = n₂ % m ∧ m = 0
