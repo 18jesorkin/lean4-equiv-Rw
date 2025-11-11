@@ -3,66 +3,6 @@ import Mathlib.Tactic
 
 open Lean Elab Tactic Term Meta
 
-/-Prints out the current Environment.
--/
-def printEnv : CoreM Unit := do
-  let env ← getEnv
-  for (name, info)
-    in (env.constants).toList.take 150 do
-        let type := info.type
-        logInfo s!"{name} : {type}"
-elab "printEnv" : tactic => do printEnv
-
-/-Prints out the current Local-Context
--/
-def printLocalCtxt : TacticM Unit :=
-  withMainContext do
-    let goal ← getMainGoal
-    let localCtxt ← getLCtx
-    for localDecl in localCtxt do
-        let expr := localDecl.toExpr
-        let name := localDecl.userName
-        let type := localDecl.type
-        logInfo s!"{name} := {expr}"
-        logInfo s!": {type}"
-        logInfo " "
-    logInfo " "
-    logInfo s!"goal"
-    logInfo s!": {←goal.getType}"
-elab "printLocalCtxt" : tactic => do printLocalCtxt
-
-/--
-  `hide h` removes the given hypotheses from the *pretty-printed*
-  goal state, but they remain usable by name in the proof.
--/
-elab "hide " n:ident : tactic => do
-  withMainContext do
-    let n         := (n.getId)
-    let goal      := ← getMainGoal
-    let localCtxt := ← getLCtx
-    let some fvar := localCtxt.findFromUserName? n | throwError s!"{n} is not in Local-Context!"
-    goal.setFVarKind (fvar.fvarId) (LocalDeclKind.implDetail)
-
-
--- Example usage
-example (p q r : Prop) (h : p → q) (h' : q → r) (hp : p) : r := by
-  /- Goal state initially:
-  p q r : Prop
-  h : p → q
-  h' : q → r
-  hp : p
-  ⊢ r
-  -/
-  hide hp
-  /- After `hide hp`, goal state:
-  p q r : Prop
-  h : p → q
-  h' : q → r
-  ⊢ r
-  -/
-  exact h' (h hp)
-
-
 /-
 Our Grammar for Inductive setoids is:
   inductive R : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop
@@ -76,33 +16,6 @@ Our Grammar for Inductive setoids is:
 /-
 grammar ⟨r := R, iseqv := ⋯⟩  := ⟨X⟩
 -/
-
-
--- R : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop
--- destruct R := ⟨[(x₁ : T₁), ⋯, (xₙ : Tₙ)], (_ : X) → (_ : X) → Prop⟩
-def destructR (R : Name) : MetaM (Array Expr × Expr) := do
-  let R := .const R []
-  let RType := ← inferType R
-  let n_plus_two := RType.getNumHeadForalls
-  forallBoundedTelescope RType (some $ n_plus_two-2) fun xs X_X_Prop => do
-    logInfo s!"{← mkForallFVars xs X_X_Prop}"
-    return ⟨xs, X_X_Prop⟩
-
-
--- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop
--- R_Setoid : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → Setoid X
-
--- QuotientExpr R R_Setoid := (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → Quotient X (R_Setoid x₁ ⋯ xₙ)
-def QuotientExpr (R : Name) (R_Setoid : Name) : MetaM Expr := do
-  let R_Setoid  := (Expr.const R_Setoid [])
-
-  let R := .const R []
-  let RType := ← inferType R
-  let n_plus_two := RType.getNumHeadForalls
-  forallBoundedTelescope RType (some $ n_plus_two-2) fun xs X_X_Prop => do
-    let X := X_X_Prop.bindingDomain!
-    let Quotient := (← mkAppOptM ``Quotient $ #[some X] ++ #[some $ mkAppN (R_Setoid) xs ])
-    mkLambdaFVars xs Quotient
 
 
 -- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop
@@ -167,7 +80,6 @@ def addR_eq (R : Name) (R_Setoid : Name) : TermElabM Unit := do
     value       := pf
   }
   addDecl decl
-  compileDecl decl
 elab "addR_eq" R:name R_Setoid:name : tactic => do addR_eq R.getName R_Setoid.getName
 
 -- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop

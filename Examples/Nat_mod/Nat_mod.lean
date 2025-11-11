@@ -1,5 +1,5 @@
-import Tactic.replace_R
-import Tactic.map2
+import Tactic.translateF.replace_R
+import Tactic.translateF.let_func
 
 def R : Nat → Nat → Prop := fun n₁ n₂ => ∃ m, n₁ % m = n₂ % m ∧ m = 0
 
@@ -59,3 +59,73 @@ example : (x y : Nat) → R x y →  R (x.add (x.add (x.add (x.add y)))) (y.add 
   replace_R R R_Setoid
   simp only [add'_mk]
   grind
+
+
+
+
+
+
+
+
+--Before:   resp_list = [⟨map₂, Nat.add, add_resp⟩]
+-- @[map₂]
+def mul_resp :  ∀ ⦃a₁ a₂ : ℕ⦄, R a₁ a₂ → ∀ ⦃b₁ b₂ : ℕ⦄, R b₁ b₂ → R (a₁.mul b₁) (a₂.mul b₂)
+  := by unfold R ; aesop
+--After:    resp_list = [⟨map₂, Nat.add, add_resp⟩, ⟨map₂, Nat.mul, mul_resp⟩]
+
+lemma test (x_R_y : R x y) : R (3 * (1 + (7 + x) + 5)) ((1 + 7 + y + 5) * 3)   :=
+  by
+  simp_rw [HAdd.hAdd, Add.add, HMul.hMul, Mul.mul]
+
+
+  translateF R R_Setoid
+
+  -- translateF R R_Setoid resp_list
+  replace_R R R_Setoid
+
+  -- For ⟨tag, func, func_resp⟩ in resp_list:
+    -- let_func tag func func_resp
+  let_map₂ Nat.add add_resp
+  let_map₂ Nat.mul mul_resp
+  -- simp_list := []
+  -- For ⟨tag, func, func_resp⟩ in resp_list:
+    -- simp_list := simp_list ++ [← func.appendAfter "_eq"]
+  -- evalTactic (← tactic | simp only simp_list at *)
+  simp only [← Nat.add_eq, ← Nat.mul_eq] at *
+  --simp_rw [← Nat.add_eq, ← Nat.mul_eq] at *
+
+  -- For ⟨tag, func, func_resp⟩ in resp_list:
+    -- evalTactic (← tactic | clear (func.appendAfter "_eq"))
+  clear Nat.add_eq
+  clear Nat.mul_eq
+
+  rewrite [x_R_y]
+
+  -- translateB R R_Setoid resp_list
+  let_map₂ Nat.add add_resp
+  let_map₂ Nat.mul mul_resp
+  simp only [Nat.add_eq, Nat.mul_eq] at *
+  clear Nat.add_eq
+  clear Nat.mul_eq
+  simp only [Quotient.eq, R_Setoid] at *
+
+  suffices eq : (Nat.mul 3 ((Nat.add 1 (Nat.add 7 y)).add 5)) = ((((Nat.add 1 7).add y).add 5).mul 3)
+    by
+    rewrite [eq] ; clear eq
+    apply R_Setoid.iseqv.refl
+  grind
+
+
+--Problems:
+  -- Don't know how to automate "simp only [← Nat.add_eq, ← Nat.mul_eq] at *" tactic from respList
+  -- Don't know how to how to make mutable "respList" datatype:
+    -- Want it to be list of triples ⟨tag, func, func_resp⟩ that tell what func's need to be lifted
+    -- then make equality proof (based on tag) then use simp only (after constructing appropriate bit of syntax)
+
+
+
+lemma test2 (x_R_y : R x y) (h0 : R (3 + (1 * (7 + x) * 5)) ((1 + 7 * y + 5) * 3)) : R (3 * (1 + (7 + x) + 5)) ((1 + 7 + y + 5) * 3)   :=
+  by
+  simp_rw [HAdd.hAdd, Add.add, HMul.hMul, Mul.mul] at *
+  translateF R R_Setoid ⟨Tag.map₂, Nat.add, add_resp⟩ ⟨Tag.map₂, Nat.mul, mul_resp⟩
+  sorry
