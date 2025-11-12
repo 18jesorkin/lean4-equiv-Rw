@@ -89,13 +89,27 @@ def translateF (R : Name) (R_Setoid : Name) (resp_list : List (Tag × Name × Na
 
 
 
+declare_syntax_cat tag
+syntax "map" : tag
+syntax "map₂": tag
+syntax "lift": tag
+syntax "lift₂": tag
+syntax entry    := "⟨" tag "," ident "," ident "⟩"
+syntax resp_list := "[" entry,* "]"
 
-syntax list := ( "⟨" ident "," ident "," ident "⟩")*
 
-elab "translateF" R:ident R_Setoid:ident resp_list:list : tactic =>
+def parse_entry : TSyntax `entry → (Tag × Name × Name)
+  | `(entry| ⟨map, $func, $func_resp⟩) => ⟨.map, func.getId, func_resp.getId⟩
+  | `(entry| ⟨map₂, $func, $func_resp⟩) => ⟨.map₂, func.getId, func_resp.getId⟩
+  | `(entry| ⟨lift, $func, $func_resp⟩) => ⟨.lift, func.getId, func_resp.getId⟩
+  | `(entry| ⟨lift₂, $func, $func_resp⟩) => ⟨.lift₂, func.getId, func_resp.getId⟩
+  | _ => unreachable!
+
+elab "translateF" R:ident R_Setoid:ident resp_list:resp_list : tactic =>
   do
-  --let `(list| $[$resp_list]*) := resp_list | unreachable!
-  translateF @R.getId @R_Setoid.getId [⟨.map₂, `Nat.add, `add_resp⟩, ⟨.map₂, `Nat.mul, `mul_resp⟩]
+  let `(resp_list| [$[$resp_list],*]) := resp_list | unreachable!
+  let resp_list := (resp_list.map parse_entry).toList
+  translateF @R.getId @R_Setoid.getId resp_list
 
 
 @[app_unexpander Quotient.lift]

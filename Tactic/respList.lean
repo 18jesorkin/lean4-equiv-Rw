@@ -8,6 +8,7 @@ inductive Tag
   | map₂
   | lift
   | lift₂
+deriving Inhabited
 
 def Tag.toName : Tag → Lean.Name
   | map => ``Quotient.map_mk

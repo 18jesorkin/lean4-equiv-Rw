@@ -77,8 +77,7 @@ lemma test (x_R_y : R x y) : R (3 * (1 + (7 + x) + 5)) ((1 + 7 + y + 5) * 3)   :
   by
   simp_rw [HAdd.hAdd, Add.add, HMul.hMul, Mul.mul]
 
-
-  translateF R R_Setoid
+  translateF R R_Setoid [⟨map₂, Nat.add, add_resp⟩, ⟨map₂, Nat.mul, mul_resp⟩]
 
   -- translateF R R_Setoid resp_list
   replace_R R R_Setoid
@@ -127,5 +126,5 @@ lemma test (x_R_y : R x y) : R (3 * (1 + (7 + x) + 5)) ((1 + 7 + y + 5) * 3)   :
 lemma test2 (x_R_y : R x y) (h0 : R (3 + (1 * (7 + x) * 5)) ((1 + 7 * y + 5) * 3)) : R (3 * (1 + (7 + x) + 5)) ((1 + 7 + y + 5) * 3)   :=
   by
   simp_rw [HAdd.hAdd, Add.add, HMul.hMul, Mul.mul] at *
-  translateF R R_Setoid ⟨Tag.map₂, Nat.add, add_resp⟩ ⟨Tag.map₂, Nat.mul, mul_resp⟩
+  translateF R R_Setoid [⟨map₂, Nat.add, add_resp⟩, ⟨map₂, Nat.mul, mul_resp⟩]
   sorry
