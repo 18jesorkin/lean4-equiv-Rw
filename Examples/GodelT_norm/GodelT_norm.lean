@@ -280,7 +280,6 @@ lemma all_Red {e : Exp a} : Red a e :=
             rcases h0 with ⟨left, h0⟩; clear left
             exact h0 (.recN ⬝ e' ⬝ e'' ⬝ numeral n') IH
 
-
 -- e ~ nbe a e
 lemma R_nbe {e : Exp a} : R e (nbe a e) := Red_R_nbe all_Red
 

@@ -3,21 +3,6 @@ import Mathlib.Tactic
 
 open Lean Elab Tactic Term Meta
 
-/-
-Our Grammar for Inductive setoids is:
-  inductive R : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop
-    where
-    · (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop  is a telescope
-    · X is our carrier-set
-
-  instance R_Setoid : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → Setoid X
-                 := λ (x₁ : T₁) (x₂ : T₂) ⋯ (xₙ : Tₙ) => ⟨r := R, iseqv := ⋯⟩
--/
-/-
-grammar ⟨r := R, iseqv := ⋯⟩  := ⟨X⟩
--/
-
-
 -- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop
 -- R_Setoid : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → Setoid X
 
