@@ -1,4 +1,6 @@
-import Tactic.translate
+--import Tactic.translate
+import Tactic.signature
+import Mathlib.Tactic
 
 -- From: https://cs.ioc.ee/ewscs/2009/dybjer/mainPalmse-revised.pdf
 
@@ -28,10 +30,20 @@ instance R_Setoid : Setoid (Exp α) :=
       }
   }
 
---User-given:
--- @[map₂]
+
 def app_resp {α} : ∀ ⦃a₁ a₂ : Exp α⦄, R a₁ a₂ → ∀ ⦃b₁ b₂ : Exp α⦄, R b₁ b₂ → R (a₁.app b₁) (a₂.app b₂)
   := fun ⦃a₁ a₂⦄ a ⦃b₁ b₂⦄ a_1 => R.app a a_1
+
+def app_sig (α : Type) : Signature (@Exp.app α) ( (R_Setoid).r ⟹ (R_Setoid).r ⟹ (R_Setoid).r )
+  :=
+  by
+  sorry
+
+example {α : Type} : True :=
+  by
+  letSignature Exp.app app_sig
+  sorry
+
 
 
 -- May create new version of tactic that expects input to be of the form:
@@ -60,6 +72,7 @@ def eval : (Exp α) → Lift_End (Exp α → Exp α)
 
 #check Quotient.map₂_mk
 #check Quotient.lift₂_mk
+
 -- ∀ b, a.app b ~ [[a]]b
 lemma eval_lemma1 (a : Exp α) : ∀ b, R (a.app b) ((eval a) b) :=
 by
@@ -101,6 +114,17 @@ by
     specialize ab_ih ((eval d) e)
     simp only [eval]
     rw [cd_ih, ab_ih]
+
+
+def eval_sig : (α : Type) → Signature (@eval α) ((R_Setoid.r ⟹ Eq)) :=
+  by sorry
+
+example : True :=
+  by
+  letSignature eval eval_sig
+  sorry
+
+
 
 def reify (f : Exp α → Exp α) : (Exp α) := f Exp.id
 

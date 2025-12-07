@@ -1,4 +1,6 @@
-import Tactic.translate
+--import Tactic.translate
+import Tactic.signature
+import Mathlib.Tactic
 
 -- From: https://cs.ioc.ee/ewscs/2009/dybjer/mainPalmse-revised.pdf
 
@@ -53,6 +55,21 @@ def app_resp : ∀ ⦃a₁ a₂ : Exp (α ⇒' β)⦄, R a₁ a₂ → ∀ ⦃b�
   :=
   fun ⦃a₁ a₂⦄ a ⦃b₁ b₂⦄ a_1 => R.app a a_1
 
+
+def app_sig (α β : Ty) : Signature (@Exp.app α β) ( (R_Setoid).r ⟹ (R_Setoid).r ⟹ (R_Setoid).r )
+  :=
+  by
+  sorry
+
+example {α β : Ty} : True :=
+  by
+
+  letSignature Exp.app (@app_sig)
+  sorry
+
+
+
+
 def Ty_inter : Ty → Type
 | nat => ℕ
 
@@ -99,7 +116,7 @@ def nbe (α : Ty) (e : Exp α) : (Exp α) := reify α (Exp_inter α e)
 -- e ~ e'  implies [[e]]a = [[e']]a
 --User-given:
 --@[lift]
-lemma Exp_inter_resp : ∀ (e e' : Exp α), R e e' → ((Exp_inter α e) = (Exp_inter α e')) :=
+lemma Exp_inter_resp (α : Ty) : Signature (Exp_inter α) ((@Setoid.r (Exp α) (@R_Setoid α)) ⟹ Eq) :=
 by
   intro e e' h
   induction h
@@ -116,8 +133,10 @@ by
   unfold nbe
   intro h1
 
-  translateF R R_Setoid [⟨lift, Exp_inter, Exp_inter_resp⟩]
-  grind
+  letSignature Exp_inter Exp_inter_resp
+
+  --translateF R R_Setoid [⟨lift, Exp_inter, Exp_inter_resp⟩]
+  --grind
 
 -- Tait-reducibility relation
 def Red : (α : Ty) → (e : Exp α) → Prop
@@ -155,6 +174,9 @@ lemma Red_resp : ∀ e e', R e e' → (Red α e = Red α e')  :=
         -- "rewrite [← f1_r_f2, f1_r_nbe, soundness f1_r_f2]"
         grind
       · intro e' Red_e'
+
+
+
         rewrite [← βIH (f1 ⬝ e') (f2 ⬝ e')
                     (by translateF R R_Setoid [⟨map₂, Exp.app, app_resp⟩] ; grind)]
         rcases Red_f1 with ⟨left, h0⟩ ; clear left
