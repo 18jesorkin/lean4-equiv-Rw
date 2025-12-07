@@ -29,7 +29,6 @@ We will be considering respectful operations of the form:
 
 
 --Does NOT Typecheck #check fun n => Quotient.map₂_mk (Nat.add) (add_sig n)
-
 def arrowsToLift (arrows : Expr) : Option Name :=
   match arrows with
     | .app (.app (.app (.app (.const ``respectful _) _) _) R₁) arrows  =>
@@ -50,7 +49,8 @@ def arrowsToLift (arrows : Expr) : Option Name :=
     | _ => none
 
 
-def letSignature (f : Name) (f_sig : Expr) : TacticM Unit := do
+def letSignature (f : Name) (f_sig : Name) : TacticM Name := do
+  let f_sig     := Lean.mkConst f_sig
   let f_sigType := ← inferType f_sig
 
   -- eq_pf := fun α₁ ... αₙ => liftFxn (f₁) (f_sig α₁ ... αₙ)
@@ -67,8 +67,12 @@ def letSignature (f : Name) (f_sig : Expr) : TacticM Unit := do
       let (_, mvarIdNew) ← mvarIdNew.intro1P
       return [mvarIdNew]
 
-elab "letSignature" f:ident f_sig:term : tactic =>
-  do
-  let f := f.getId
-  let f_sig := ← Tactic.elabTerm f_sig none
-  letSignature (f) (f_sig)
+  return f.appendAfter "_eq"
+
+
+syntax entry    := "⟨" ident "," ident "⟩"
+syntax sig_list := "[" entry,* "]"
+
+def parse_entry : TSyntax `entry → (Name × Name)
+  | `(entry| ⟨$f, $f_sig⟩) => ⟨f.getId, f_sig.getId⟩
+  | _ => unreachable!

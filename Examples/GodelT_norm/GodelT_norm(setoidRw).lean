@@ -1,5 +1,4 @@
---import Tactic.translate
-import Tactic.signature
+import Tactic.translate
 import Mathlib.Tactic
 
 -- From: https://cs.ioc.ee/ewscs/2009/dybjer/mainPalmse-revised.pdf
@@ -49,25 +48,10 @@ instance R_Setoid {α} : Setoid (Exp α) :=
       }
   }
 
---User-given:
---@[map₂]
-def app_resp : ∀ ⦃a₁ a₂ : Exp (α ⇒' β)⦄, R a₁ a₂ → ∀ ⦃b₁ b₂ : Exp α⦄, R b₁ b₂ → R (a₁.app b₁) (a₂.app b₂)
-  :=
-  fun ⦃a₁ a₂⦄ a ⦃b₁ b₂⦄ a_1 => R.app a a_1
-
-
 def app_sig (α β : Ty) : Signature (@Exp.app α β) ( (R_Setoid).r ⟹ (R_Setoid).r ⟹ (R_Setoid).r )
   :=
   by
   sorry
-
-example {α β : Ty} : True :=
-  by
-
-  letSignature Exp.app (@app_sig)
-  sorry
-
-
 
 
 def Ty_inter : Ty → Type
@@ -128,15 +112,14 @@ by
 -- e ~ e'  implies nbe a e = nbe a e'
 --User-given:
 --@[lift]
-lemma soundness {a : Ty} {e e' : Exp a} : R e e' → nbe a e = nbe a e' :=
+lemma soundness : (α : Ty) → Signature (nbe α) ((R_Setoid).r ⟹ Eq) :=
 by
+  intro α
+  simp only [Signature, respectful, R_Setoid]
   unfold nbe
-  intro h1
 
-  letSignature Exp_inter Exp_inter_resp
-
-  --translateF R R_Setoid [⟨lift, Exp_inter, Exp_inter_resp⟩]
-  --grind
+  translateF R R_Setoid [⟨Exp_inter, Exp_inter_resp⟩]
+  grind
 
 -- Tait-reducibility relation
 def Red : (α : Ty) → (e : Exp α) → Prop
@@ -153,13 +136,15 @@ lemma Red_R_nbe (h : Red α e)  : R e (nbe α e) :=
 -- e ~ e' implies  Red α e = Red α e'
 -- User given:
 --[@lift]
-lemma Red_resp : ∀ e e', R e e' → (Red α e = Red α e')  :=
+lemma Red_sig : (α : Ty) → Signature (Red α) ((R_Setoid).r ⟹ Eq)   :=
   by
+  intro α
+  simp only [Signature, respectful, R_Setoid]
   refine fun e e' α ↦ ?_ ; apply propext ; revert α e' e
   induction α
   · unfold Red
     intro a b a_R_b
-    translateF R R_Setoid [⟨lift, nbe, soundness⟩]
+    translateF R R_Setoid [⟨nbe, soundness⟩]
     rw [a_R_b]
 
   · rename_i α β αIH βIH; clear αIH
@@ -169,7 +154,7 @@ lemma Red_resp : ∀ e e', R e e' → (Red α e = Red α e')  :=
       apply And.intro
       · have f1_R_nbe := Red_R_nbe Red_f1; clear Red_f1
         -- Translate "R a b" to "⟦a⟧ = ⟦b⟧":
-        translateF R R_Setoid [⟨lift, nbe, soundness⟩]
+        translateF R R_Setoid [⟨nbe, soundness⟩]
         -- f2 ~ f1 ~ nbe f1 = nbe f2
         -- "rewrite [← f1_r_f2, f1_r_nbe, soundness f1_r_f2]"
         grind
@@ -178,7 +163,7 @@ lemma Red_resp : ∀ e e', R e e' → (Red α e = Red α e')  :=
 
 
         rewrite [← βIH (f1 ⬝ e') (f2 ⬝ e')
-                    (by translateF R R_Setoid [⟨map₂, Exp.app, app_resp⟩] ; grind)]
+                    (by translateF R R_Setoid [⟨Exp.app, app_sig⟩] ; grind)]
         rcases Red_f1 with ⟨left, h0⟩ ; clear left
         exact h0 e' Red_e'
 
@@ -186,13 +171,13 @@ lemma Red_resp : ∀ e e', R e e' → (Red α e = Red α e')  :=
       apply And.intro
       · have f2_R_nbe := Red_R_nbe Red_f2; clear Red_f2
         -- Translate "R a b" to "⟦a⟧ = ⟦b⟧":
-        translateF R R_Setoid [⟨lift, nbe, soundness⟩]
+        translateF R R_Setoid [⟨nbe, soundness⟩]
         -- f1 ~ f2 ~ nbe f2 = nbe f1
         -- "rewrite [f1_r_f2, f2_r_nbe, ← soundness f1_r_f2]"
         grind
       · intro e' Red_e'
         rewrite [βIH (f1 ⬝ e') (f2 ⬝ e')
-                    (by translateF R R_Setoid [⟨map₂, Exp.app, app_resp⟩] ; grind)]
+                    (by translateF R R_Setoid [⟨Exp.app, app_sig⟩] ; grind)]
         rcases Red_f2 with ⟨left, h0⟩ ; clear left
         exact h0 e' Red_e'
 
@@ -207,7 +192,7 @@ lemma Red_numeral : Red nat (numeral n) :=
     have eq : nbe nat (succ ⬝ numeral n') = succ ⬝ (nbe nat $ numeral n') := rfl
     rewrite [eq] ; clear eq
     -- Translate "R a b" to "⟦a⟧ = ⟦b⟧":
-    translateF R R_Setoid [⟨map₂, Exp.app, app_resp⟩]
+    translateF R R_Setoid [⟨Exp.app, app_sig⟩]
     -- succ ⬝ numeral n' ~ succ ⬝ nbe (numeral n')
     -- "rewrite [IH]"
     grind
@@ -226,7 +211,7 @@ lemma all_Red {e : Exp α} : Red α e :=
       · have e'_R_nbe := Red_R_nbe Red_e'; clear Red_e'
         have eq : nbe (β ⇒' α) (K ⬝ e') = K ⬝ nbe α e' := rfl ; rewrite [eq] ; clear eq
         -- Translate "R a b" to "⟦a⟧ = ⟦b⟧"
-        translateF R R_Setoid [⟨map₂, Exp.app, app_resp⟩]
+        translateF R R_Setoid [⟨Exp.app, app_sig⟩]
         -- K ⬝ e' ~ K ⬝ nbe e'
         -- "rewrite [e'_r_nbe]"
         grind
@@ -235,7 +220,7 @@ lemma all_Red {e : Exp α} : Red α e :=
 
         -- Translate "R a b" to "⟦a⟧ = ⟦b⟧"
         have R.K := @R.K
-        translateF R R_Setoid [⟨lift,Red, Red_resp⟩, ⟨map₂, Exp.app, app_resp⟩]
+        translateF R R_Setoid [⟨Red, Red_sig⟩, ⟨Exp.app, app_sig⟩]
         -- (K ⬝ e' ⬝ e'') ~ e'
         -- "rewrite [R.K]"
         rewrite [R.K]
@@ -249,7 +234,7 @@ lemma all_Red {e : Exp α} : Red α e :=
       · have x_R_nbe := Red_R_nbe Red_x; clear Red_x
         have eq : nbe ((α ⇒' β) ⇒' α ⇒' γ) (S ⬝ x) = S ⬝ nbe (α ⇒' β ⇒' γ)  x := rfl ; rewrite [eq] ; clear eq
         -- Translate "R a b" to "⟦a⟧ = ⟦b⟧"
-        translateF R R_Setoid [⟨map₂, Exp.app, app_resp⟩]
+        translateF R R_Setoid [⟨Exp.app, app_sig⟩]
         -- S ⬝ x ~ S ⬝ nbe x
         -- "rewrite [x_r_nbe]"
         rw [x_R_nbe]
@@ -258,7 +243,7 @@ lemma all_Red {e : Exp α} : Red α e :=
         · have x_R_nbe := Red_R_nbe Red_x; clear Red_x; have y_r_nbe := Red_R_nbe Red_y; clear Red_y
           have eq : nbe (α ⇒' γ) (S ⬝ x ⬝ y) = S ⬝ nbe (α ⇒' β ⇒' γ) x ⬝ nbe (α ⇒' β) y := rfl ; rewrite [eq] ; clear eq
           -- Translate "R a b" to "⟦a⟧ = ⟦b⟧"
-          translateF R R_Setoid [⟨map₂, Exp.app, app_resp⟩]
+          translateF R R_Setoid [⟨Exp.app, app_sig⟩]
           -- S ⬝ x ⬝ y ~ S ⬝ nbe x ⬝ y ~ S ⬝ nbe x ⬝ nbe y
           -- "rewrite [x_r_nbe, y_r_nbe]"
           grind
@@ -269,7 +254,7 @@ lemma all_Red {e : Exp α} : Red α e :=
 
           -- Translate "R a b" to "⟦a⟧ = ⟦b⟧"
           have R.S := @R.S
-          translateF R R_Setoid [⟨lift, Red, Red_resp⟩]
+          translateF R R_Setoid [⟨Red, Red_sig⟩]
           -- "rewrite [R.S]"
           grind
 
@@ -288,7 +273,7 @@ lemma all_Red {e : Exp α} : Red α e :=
       have eq : nbe nat (succ ⬝ x) = succ ⬝ (nbe nat x) := rfl ; rewrite [eq] ; clear eq
 
       -- Translate "R a b" to "⟦a⟧ = ⟦b⟧"
-      translateF R R_Setoid [⟨map₂, Exp.app, app_resp⟩]
+      translateF R R_Setoid [⟨Exp.app, app_sig⟩]
       -- succ ⬝ x ~ succ ⬝ nbe x
       -- "rewrite [x_r_nbe]"
       grind
@@ -304,7 +289,7 @@ lemma all_Red {e : Exp α} : Red α e :=
       · have e'_R_nbe := Red_R_nbe Red_e'; clear Red_e'
         have eq : nbe ((nat ⇒' α ⇒' α) ⇒' nat ⇒' α) (recN ⬝ e') = recN ⬝ nbe α e' := rfl ; rewrite [eq] ; clear eq
         -- Translate "R a b" to "⟦a⟧ = ⟦b⟧"
-        translateF R R_Setoid [⟨map₂, Exp.app, app_resp⟩]
+        translateF R R_Setoid [⟨Exp.app, app_sig⟩]
         -- recN ⬝ e' ~ recN ⬝ nbe e'
         -- "rewrite [e'_r_nbe]"
         grind
@@ -314,23 +299,23 @@ lemma all_Red {e : Exp α} : Red α e :=
           have eq : nbe (nat ⇒' α) (recN ⬝ e' ⬝ e'') = recN ⬝ nbe α e' ⬝ nbe (nat ⇒' α ⇒' α) e'' := rfl
           rewrite [eq] ; clear eq
           -- Translate "R a b" to "⟦a⟧ = ⟦b⟧"
-          translateF R R_Setoid [⟨map₂, Exp.app, app_resp⟩]
+          translateF R R_Setoid [⟨Exp.app, app_sig⟩]
           grind
         · intro n Red_n
           have n_R_nbe := Red_n; unfold Red at n_R_nbe ; clear Red_n
 
 
 
-          translateF R R_Setoid [⟨lift,Red, Red_resp⟩, ⟨map₂, Exp.app, app_resp⟩]
+          translateF R R_Setoid [⟨Red, Red_sig⟩, ⟨Exp.app, app_sig⟩]
           rewrite [n_R_nbe]
-          translateB R R_Setoid [⟨lift,Red, Red_resp⟩, ⟨map₂, Exp.app, app_resp⟩]
+          translateB R R_Setoid [⟨Red, Red_sig⟩, ⟨Exp.app, app_sig⟩]
 
           unfold nbe ; simp [reify]
           induction ((Exp_inter nat n))
           · unfold numeral
 
             have R.recN_zero := @R.recN_zero
-            translateF R R_Setoid [⟨lift, Red, Red_resp⟩]
+            translateF R R_Setoid [⟨Red, Red_sig⟩]
             -- "rewrite [R.recN_zero]"
             grind
           · rename_i n' IH
@@ -340,7 +325,7 @@ lemma all_Red {e : Exp α} : Red α e :=
             rcases h0 with ⟨left, h0⟩; clear left
 
             have R.recN_succ := @R.recN_succ
-            translateF R R_Setoid [⟨lift,Red, Red_resp⟩]
+            translateF R R_Setoid [⟨Red, Red_sig⟩]
             -- "rewrite [R.recN_succ]"
             grind
 
@@ -359,83 +344,4 @@ lemma completeness : nbe a e = nbe a e' → R e e' :=
   rw [R_nbe, eq, ← R_nbe]
 
 -- e ~ e' ↔ nbe a e = nbe a e'
-lemma correctness {e e' : Exp a} : R e e' ↔ nbe a e = nbe a e' := ⟨soundness, completeness⟩
-
-
-
--- Examples:
-
-example {α : Ty} {a b : Exp α}
-                        (f : (x y : Exp α) → (@R α x y) → Nat)
-                        (hf : (x y : Exp α) → (xRy : @R α x y) → f x y xRy = 3)
-                        (aRb : R a b)
-                        : (f a b aRb) = 3 :=
-  by
-  /-
-  revert aRb hf f b a α
-  generalize eq : @R = R'
-  rewrite [R_eq] at eq
-  subst eq
-  beta_reduce
-  intro α a b f hf aRb
-
-  exact hf a b aRb
-  -/
-  sorry
-
-
-example : (α : Ty) → (a b c : Exp α) → (R a a) ∧ (R a b → R b a) ∧ (R a b → R b c → R a c) :=
-  by
-  /-
-  intro α a b c
-  repeat any_goals apply And.intro
-  · exact R.refl
-  · exact R.symm
-  · exact R.trans
-  -/
-  translateF R R_Setoid []
-  grind
-
-
-
-example :
-      (x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 : Exp nat)
-      → (@R nat x1 x13)
-      → (@R nat x10 x5)
-      → (@R nat x4 x12)
-      → (@R nat x7 x12)
-      → (@R nat x14 x6)
-      → (@R nat x14 x9)
-      → (@R nat x12 x12)
-      → (@R nat x12 x17)
-      → (@R nat x20 x3)
-      → (@R nat x7 x1)
-      → (@R nat x3 x14)
-      → (@R nat x9 x18)
-      → (@R nat x19 x14)
-      → (@R nat x12 x6)
-      → (@R nat x10 x4)
-      → (@R nat x6 x8)
-      → (@R nat x16 x9)
-      → (@R nat x6 x17)
-  := by
-    translateF R R_Setoid []
-    grind
-
-example :
-      (x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 : Exp nat)
-      → (@R nat x12 x4)
-      → (@R nat x5 x1)
-      → (@R nat x6 x9)
-      → (@R nat x17 x7)
-      → (@R nat x1 x9)
-      → (@R nat x4 x17)
-      → (@R nat x17 x12)
-  := by
-    translateF R R_Setoid []
-    grind
-
-example : ∀ x y : Exp (nat ⇒' nat), R (x.app (x.app (x.app zero))) (x.app (y.app (x.app zero))) :=
-  by
-  translateF R R_Setoid [⟨map₂, Exp.app, app_resp⟩]
-  sorry
+lemma correctness {e e' : Exp a} : R e e' ↔ nbe a e = nbe a e' := sorry --⟨soundness, completeness⟩
