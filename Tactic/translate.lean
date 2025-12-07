@@ -12,7 +12,7 @@ def translateF (R : Name) (R_Setoid : Name) (resp_list : Array (Name × Name)) :
   --Step 2: For each respectful func, add "func_eq" to a list
   let mut eq_list := []
   for (f, f_sig) in resp_list do
-    let eq := mkIdent (← letSignature f f_sig)
+    let eq := mkIdent (← letSignature (mkConst R_Setoid) f f_sig)
     eq_list := eq_list.concat eq
 
   -- Step 3:
@@ -51,7 +51,7 @@ def translateB (R : Name) (R_Setoid : Name) (resp_list : Array (Name × Name)) :
   --Step 1: For each respectful func, add "func_eq" to a list
   let mut eq_list := []
   for (f, f_sig) in resp_list do
-    let eq := mkIdent (← letSignature f f_sig)
+    let eq := mkIdent (← letSignature (mkConst R_Setoid)  f f_sig)
     eq_list := eq_list.concat eq
 
   -- Step 2:

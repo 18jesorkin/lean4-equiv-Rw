@@ -48,7 +48,7 @@ instance R_Setoid {α} : Setoid (Exp α) :=
       }
   }
 
-def app_sig (α β : Ty) : Signature (@Exp.app α β) ( (R_Setoid).r ⟹ (R_Setoid).r ⟹ (R_Setoid).r )
+def app_sig (α β : Ty) : Signature (@Exp.app α β) ( R ⟹ R ⟹ R )
   :=
   by
   sorry
@@ -100,7 +100,7 @@ def nbe (α : Ty) (e : Exp α) : (Exp α) := reify α (Exp_inter α e)
 -- e ~ e'  implies [[e]]a = [[e']]a
 --User-given:
 --@[lift]
-lemma Exp_inter_resp (α : Ty) : Signature (Exp_inter α) ((@Setoid.r (Exp α) (@R_Setoid α)) ⟹ Eq) :=
+lemma Exp_inter_resp (α : Ty) : Signature (Exp_inter α) (R ⟹ Eq) :=
 by
   intro e e' h
   induction h
@@ -112,7 +112,7 @@ by
 -- e ~ e'  implies nbe a e = nbe a e'
 --User-given:
 --@[lift]
-lemma soundness : (α : Ty) → Signature (nbe α) ((R_Setoid).r ⟹ Eq) :=
+lemma soundness : (α : Ty) → Signature (nbe α) (R ⟹ Eq) :=
 by
   intro α
   simp only [Signature, respectful, R_Setoid]
@@ -136,7 +136,7 @@ lemma Red_R_nbe (h : Red α e)  : R e (nbe α e) :=
 -- e ~ e' implies  Red α e = Red α e'
 -- User given:
 --[@lift]
-lemma Red_sig : (α : Ty) → Signature (Red α) ((R_Setoid).r ⟹ Eq)   :=
+lemma Red_sig : (α : Ty) → Signature (Red α) (R ⟹ Eq)   :=
   by
   intro α
   simp only [Signature, respectful, R_Setoid]

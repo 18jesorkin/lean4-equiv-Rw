@@ -9,19 +9,25 @@ inductive Exp (α : Type)
 | elem : α → Exp α
 
 
-inductive R : (Exp α) → (Exp α) → Prop
+inductive R : {α : Type} → (Exp α) → (Exp α) → Prop
 | assoc {e e' e'' : Exp α} : R ((e.app e').app e'') (e.app (e'.app e''))
 | id_left {e  : Exp α}     : R ((Exp.id).app e) (e)
 | id_right {e : Exp α}     : R (e.app Exp.id) (e)
 | refl     {e : Exp α}     : R (e) (e)
 | symm      {e e' : Exp α}  : R (e) (e') → R (e') (e)
-| trans {e e' e'' : Exp α} : R (e) (e') → R (e') (e'') → R (e) (e'')
+| trans {e e' e'' : Exp α} : R  (e) (e') → R (e') (e'') → R (e) (e'')
 | app {a b c d : Exp α}    : R (a) (b) → R (c) (d) → R (a.app c) (b.app d)
 
 
+def Equivalence_R (α : Type) : Equivalence (@R α) :=
+  { refl := λ α => R.refl
+    symm := R.symm
+    trans := R.trans
+      }
+
 -- Setoid instance here:
 instance R_Setoid : Setoid (Exp α) :=
-  { r := R
+  { r := @R α
     iseqv :=
       { refl := λ _ => R.refl
         symm := R.symm
@@ -29,10 +35,11 @@ instance R_Setoid : Setoid (Exp α) :=
       }
   }
 
-def app_sig (α : Type) : Signature (@Exp.app α) ( (R_Setoid).r ⟹ (R_Setoid).r ⟹ (R_Setoid).r )
+def app_sig (α : Type) : Signature (@Exp.app α) (R ⟹ R ⟹ R )
   :=
   by
   sorry
+
 
 def eval : (Exp α) → (Exp α → Exp α)
   | Exp.app a b => (λ e => eval a (eval b e))
@@ -41,7 +48,7 @@ def eval : (Exp α) → (Exp α → Exp α)
 
 
 -- ∀ b, a.app b ~ [[a]]b
-lemma eval_lemma1 (a : Exp α) : ∀ b, R (a.app b) ((eval a) b) :=
+lemma eval_lemma1 {α : Type} (a : Exp α) : ∀ b, R (a.app b) ((eval a) b) :=
 by
   induction a
 
@@ -65,7 +72,7 @@ by
     exact R.refl
 
 
-lemma eval_sig : (α : Type) → Signature (@eval α) ( (R_Setoid).r ⟹ Eq) :=
+lemma eval_sig : (α : Type) → Signature (@eval α) ( R ⟹ Eq) :=
 by
   intro α a b h
   apply funext
