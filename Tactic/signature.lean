@@ -27,8 +27,6 @@ We will be considering respectful operations of the form:
   f_sig : α₁ → ⋯ → αₘ → Signature f (R₁ ⟹ R₂ ⟹ Eq)
 -/
 
-
---Does NOT Typecheck #check fun n => Quotient.map₂_mk (Nat.add) (add_sig n)
 def arrowsToLift (arrows : Expr) : Option Name :=
   match arrows with
     | .app (.app (.app (.app (.const ``respectful _) _) _) R₁) arrows  =>

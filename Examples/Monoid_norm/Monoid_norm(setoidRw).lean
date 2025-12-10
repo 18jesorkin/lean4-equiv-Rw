@@ -19,12 +19,6 @@ inductive R : {α : Type} → (Exp α) → (Exp α) → Prop
 | app {a b c d : Exp α}    : R (a) (b) → R (c) (d) → R (a.app c) (b.app d)
 
 
-def Equivalence_R (α : Type) : Equivalence (@R α) :=
-  { refl := λ α => R.refl
-    symm := R.symm
-    trans := R.trans
-      }
-
 -- Setoid instance here:
 instance R_Setoid : Setoid (Exp α) :=
   { r := @R α
@@ -38,7 +32,8 @@ instance R_Setoid : Setoid (Exp α) :=
 def app_sig (α : Type) : Signature (@Exp.app α) (R ⟹ R ⟹ R )
   :=
   by
-  sorry
+  simp only [Signature, respectful]
+  exact fun x y a x_2 y_2 a_1 => R.app a a_1
 
 
 def eval : (Exp α) → (Exp α → Exp α)
@@ -72,7 +67,7 @@ by
     exact R.refl
 
 
-lemma eval_sig : (α : Type) → Signature (@eval α) ( R ⟹ Eq) :=
+lemma eval_sig : (α : Type) → Signature (@eval α) (R ⟹ Eq) :=
 by
   intro α a b h
   apply funext

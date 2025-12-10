@@ -48,10 +48,11 @@ instance R_Setoid {α} : Setoid (Exp α) :=
       }
   }
 
-def app_sig (α β : Ty) : Signature (@Exp.app α β) ( R ⟹ R ⟹ R )
+def app_sig (α β : Ty) : Signature (@Exp.app α β) (R ⟹ R ⟹ R )
   :=
   by
-  sorry
+  simp only [Signature, respectful]
+  exact fun x y a x_2 y_2 a_1 => R.app a a_1
 
 
 def Ty_inter : Ty → Type
@@ -109,13 +110,10 @@ by
     unfold Exp_inter
     rw [ab_ih, cd_ih]
 
--- e ~ e'  implies nbe a e = nbe a e'
---User-given:
---@[lift]
 lemma soundness : (α : Ty) → Signature (nbe α) (R ⟹ Eq) :=
 by
   intro α
-  simp only [Signature, respectful, R_Setoid]
+  simp only [Signature, respectful]
   unfold nbe
 
   translateF R R_Setoid [⟨Exp_inter, Exp_inter_resp⟩]
@@ -139,8 +137,8 @@ lemma Red_R_nbe (h : Red α e)  : R e (nbe α e) :=
 lemma Red_sig : (α : Ty) → Signature (Red α) (R ⟹ Eq)   :=
   by
   intro α
-  simp only [Signature, respectful, R_Setoid]
-  refine fun e e' α ↦ ?_ ; apply propext ; revert α e' e
+  simp only [Signature, respectful]
+  intros e e' α; apply propext ; revert α e' e
   induction α
   · unfold Red
     intro a b a_R_b
@@ -159,9 +157,6 @@ lemma Red_sig : (α : Ty) → Signature (Red α) (R ⟹ Eq)   :=
         -- "rewrite [← f1_r_f2, f1_r_nbe, soundness f1_r_f2]"
         grind
       · intro e' Red_e'
-
-
-
         rewrite [← βIH (f1 ⬝ e') (f2 ⬝ e')
                     (by translateF R R_Setoid [⟨Exp.app, app_sig⟩] ; grind)]
         rcases Red_f1 with ⟨left, h0⟩ ; clear left
@@ -217,10 +212,9 @@ lemma all_Red {e : Exp α} : Red α e :=
         grind
 
       · intro e'' Red_e''; clear Red_e''
-
         -- Translate "R a b" to "⟦a⟧ = ⟦b⟧"
         have R.K := @R.K
-        translateF R R_Setoid [⟨Red, Red_sig⟩, ⟨Exp.app, app_sig⟩]
+        translateF R R_Setoid [⟨Red, Red_sig⟩]
         -- (K ⬝ e' ⬝ e'') ~ e'
         -- "rewrite [R.K]"
         rewrite [R.K]
@@ -271,7 +265,6 @@ lemma all_Red {e : Exp α} : Red α e :=
     · intro x Red_x
       unfold Red at *; rename' Red_x => x_R_nbe
       have eq : nbe nat (succ ⬝ x) = succ ⬝ (nbe nat x) := rfl ; rewrite [eq] ; clear eq
-
       -- Translate "R a b" to "⟦a⟧ = ⟦b⟧"
       translateF R R_Setoid [⟨Exp.app, app_sig⟩]
       -- succ ⬝ x ~ succ ⬝ nbe x
@@ -303,8 +296,6 @@ lemma all_Red {e : Exp α} : Red α e :=
           grind
         · intro n Red_n
           have n_R_nbe := Red_n; unfold Red at n_R_nbe ; clear Red_n
-
-
 
           translateF R R_Setoid [⟨Red, Red_sig⟩, ⟨Exp.app, app_sig⟩]
           rewrite [n_R_nbe]
@@ -344,4 +335,8 @@ lemma completeness : nbe a e = nbe a e' → R e e' :=
   rw [R_nbe, eq, ← R_nbe]
 
 -- e ~ e' ↔ nbe a e = nbe a e'
-lemma correctness {e e' : Exp a} : R e e' ↔ nbe a e = nbe a e' := sorry --⟨soundness, completeness⟩
+lemma correctness {e e' : Exp a} : R e e' ↔ nbe a e = nbe a e' :=
+  by
+  have soundness  := @soundness
+  have completness:= @completeness
+  aesop
