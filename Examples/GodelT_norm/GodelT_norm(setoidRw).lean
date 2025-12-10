@@ -20,7 +20,7 @@ open Exp
 infixl : 100 " ⬝ " => app
 
 -- Didn't declare Setoid instance yet
-inductive R : {α : Ty} → (Exp α) → (Exp α) → Prop
+inductive R : {α : Ty} → relation (Exp α)
 | refl {α : Ty}{e : Exp α}
         : R (e) (e)
 | symm   {α : Ty}{e e' : Exp α}

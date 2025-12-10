@@ -1,7 +1,7 @@
 import Tactic.translate
 import Mathlib.Tactic
 
-def R : Nat → Nat → Nat → Prop := fun n x y => x.mod n = y.mod n
+def R : Nat → relation Nat := fun n x y => x.mod n = y.mod n
 
 -- Setoid instance here:
 instance R_Setoid (n : Nat) : Setoid Nat :=

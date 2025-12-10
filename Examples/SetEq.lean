@@ -4,7 +4,7 @@ From:
   https://github.com/FWuermse/grw/blob/main/GrwTest/SetEq.lean
 -/
 
-def setEq {α : Type} : List α → List α → Prop :=
+def setEq {α : Type} : relation (List α) :=
   fun l1 l2 => ∀ x, x ∈ l1 <-> x ∈ l2
 
 instance setEqEquivalence {α : Type} : Equivalence (@setEq α) where

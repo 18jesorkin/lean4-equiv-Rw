@@ -3,18 +3,17 @@ import Mathlib.Tactic
 
 open Lean Elab Tactic Term Meta
 
--- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop
+-- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → relation X
 -- R_Setoid : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → Setoid X
 
 -- mkQuotientEq R R_Setoid := λ x₁ ⋯ xₙ e1 e2 => ⟦e1⟧ = ⟦e2⟧
 def mkQuotientEq (R : Name) (R_Setoid : Name) : MetaM Expr := do
   let R_Setoid  := (Expr.const R_Setoid [])
 
-
-  let R := .const R []
+  let R     := Lean.mkConst R
   let RType := ← inferType R
-  let n_plus_two := RType.getNumHeadForalls
-  forallBoundedTelescope RType (some $ n_plus_two) fun xs_e1_e2 _Prop => do
+  let n     := RType.getNumHeadForalls
+  forallBoundedTelescope RType (some $ n+2) fun xs_e1_e2 _Prop => do
     let xs := xs_e1_e2.pop.pop
     let e1 := xs_e1_e2.pop.toList.getLast!
     let e2 := xs_e1_e2.toList.getLast!
@@ -25,7 +24,7 @@ def mkQuotientEq (R : Name) (R_Setoid : Name) : MetaM Expr := do
     mkLambdaFVars xs_e1_e2 eq
 
 
--- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop
+-- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → relation X
 -- R_Setoid : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → Setoid X
 
 -- mkR_Eq_Quotient R R_Setoid := R = λ x₁ ⋯ xₙ e1 e2 => ⟦e1⟧ = ⟦e2⟧
@@ -35,7 +34,7 @@ def mkR_Eq_Quotient (R : Name) (R_Setoid : Name) : MetaM Expr := do
   mkEq R QuotientEq
 
 
--- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop
+-- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → relation X
 -- R_Setoid : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → Setoid X
 
 -- Adds "R_eq : R = λ x₁ ⋯ xₙ e1 e2 => ⟦e1⟧ = ⟦e2⟧" to the environment
@@ -67,7 +66,7 @@ def addR_eq (R : Name) (R_Setoid : Name) : TermElabM Unit := do
   addDecl decl
 elab "addR_eq" R:name R_Setoid:name : tactic => do addR_eq R.getName R_Setoid.getName
 
--- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → (_ : X) → (_ : X) → Prop
+-- R        : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → relation X
 -- R_Setoid : (x₁ : T₁) → (x₂ : T₂) → ⋯ → (xₙ : Tₙ) → Setoid X
 def replace_R (R : Name) (R_Setoid : Name) : TacticM Unit :=
   withMainContext do

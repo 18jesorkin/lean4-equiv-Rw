@@ -27,33 +27,7 @@ We will be considering respectful operations of the form:
   f_sig : α₁ → ⋯ → αₘ → Signature f (R₁ ⟹ R₂ ⟹ Eq)
 -/
 
-def arrowsToLift (arrows : Expr) : Option Name :=
-  match arrows with
-    | .app (.app (.app (.app (.const ``respectful _) _) _) R₁) arrows  =>
-      match arrows with
-                                    --Signature f (R₁ ⟹ Eq)
-      | .app (.const ``Eq _) _  => return ``Quotient.lift_mk
-                                                  --Signature f (R₁ ⟹ R₂)
-      | .app ((.const R₂ _) ) _    => return ``Quotient.map_mk
-      | .app R₂ arrows =>
-        match arrows with
-                                      --Signature f (R₁ ⟹ R₂ ⟹ Eq)
-        | .app (.const ``Eq _) _ => return ``Quotient.lift₂_mk
-                                      --Signature f (R₁ ⟹ R₂ ⟹ R₃)
-        | .app ((.const R₃ _) ) _ => return ``Quotient.map₂_mk
-
-        | _ => none
-      | _ => none
-    | _ => none
-
-
-def SetoidToCarrier (Setoid_A : Expr) : MetaM Expr := do
-  let Setoid_AType := ← inferType Setoid_A
-  let A : Expr := ← forallTelescope Setoid_AType fun alphas Setoid_A₁ =>
-    mkLambdaFVars alphas ((Setoid_A₁.getAppArgs)[0]!)
-  return A
-
-def arrowsToLift' (Setoid_A : Expr) (f_sig : Expr) : MetaM Expr := do
+def sigToQuotient (Setoid_A : Expr) (f_sig : Expr) : MetaM Expr := do
   let f_sigType := ← inferType f_sig
 
   forallTelescope f_sigType fun alphas sig_f₁_arrows =>
@@ -71,7 +45,7 @@ def arrowsToLift' (Setoid_A : Expr) (f_sig : Expr) : MetaM Expr := do
                     | .app (.app (.app (.app (.const ``respectful _) _) _) (.app ((.const R₂ _) ) param₂) ) arrows =>
                       match arrows with
                                                     --Signature f (R₁ ⟹ R₂ ⟹ Eq)
-                      | .app (.const ``Eq _) _ => mkAppOptM ``Quotient.lift₂_mk #[]
+                      | .app (.const ``Eq _) _ => mkAppOptM ``Quotient.lift₂_mk $ #[none, none, none, Setoid_A.app param₁, Setoid_A.app param₂] ++ #[some f₁, some f_sig₁]
                                                     --Signature f (R₁ ⟹ R₂ ⟹ R₃)
                       | .app ((.const R₃ _) ) param₃ => mkAppOptM ``Quotient.map₂_mk $ #[none, none, Expr.app Setoid_A param₁, Expr.app Setoid_A param₂, none, Expr.app Setoid_A param₃] ++ #[some f₁, some f_sig₁]
 
@@ -84,17 +58,9 @@ def arrowsToLift' (Setoid_A : Expr) (f_sig : Expr) : MetaM Expr := do
 
 def letSignature (Setoid_A : Expr) (f : Name) (f_sig : Name) : TacticM Name := do
   let f_sig     := Lean.mkConst f_sig
-  let f_sigType := ← inferType f_sig
 
   -- eq_pf := fun α₁ ... αₙ => liftFxn (f₁) (f_sig α₁ ... αₙ)
-  let eq_pf   := ← forallTelescope f_sigType fun alphas sig_f₁_arrows₁ => do
-    let f₁                   := (sig_f₁_arrows₁.getAppArgs)[1]!
-    let arrows₁              := (sig_f₁_arrows₁.getAppArgs)[2]!
-    --let .some liftFxn       := arrowsToLift arrows₁ | throwError "Must have type ∀ α₁ ... αₙ, Signature f₁ (R₁ ⟹ ...)"
-    let  liftFxn             := ← arrowsToLift' Setoid_A f_sig
-    --mkLambdaFVars alphas (← mkAppM' liftFxn #[f₁, (← mkAppM' f_sig alphas)])
-    return liftFxn
-
+  let eq_pf   := ← sigToQuotient Setoid_A f_sig
   let eq_Type := ← inferType eq_pf
 
   withMainContext do

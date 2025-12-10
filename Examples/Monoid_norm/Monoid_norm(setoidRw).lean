@@ -9,7 +9,7 @@ inductive Exp (α : Type)
 | elem : α → Exp α
 
 
-inductive R : {α : Type} → (Exp α) → (Exp α) → Prop
+inductive R : {α : Type} → relation (Exp α)
 | assoc {e e' e'' : Exp α} : R ((e.app e').app e'') (e.app (e'.app e''))
 | id_left {e  : Exp α}     : R ((Exp.id).app e) (e)
 | id_right {e : Exp α}     : R (e.app Exp.id) (e)
